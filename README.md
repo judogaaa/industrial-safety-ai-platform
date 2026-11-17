@@ -69,7 +69,9 @@ python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
 cd backend
 python -m ruff check .
 python -m pytest -q
-cd ../frontend
+cd ..
+PYTHONPATH=backend python -m pytest -q tests
+cd frontend
 npm test
 npm run build
 ```

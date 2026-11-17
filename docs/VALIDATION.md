@@ -4,7 +4,7 @@
 
 | Проверка | Результат |
 |---|---|
-| Backend pytest | 293 passed, 5 skipped |
+| Backend pytest | 293 passed, 5 skipped; ещё 12 synthetic training tests passed |
 | Frontend / static checks | Vitest: 39 passed. TypeScript/Vite: build passed. Ruff: passed. |
 | Публикуемые файлы | Шаблоны секретов, приватные адреса и персональные пути: 0 находок после ручной проверки тестовых значений |
 

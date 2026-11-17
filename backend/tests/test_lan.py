@@ -82,6 +82,49 @@ def test_remote_client_cannot_access_unprotected_api_even_when_host_header_is_lo
     assert "токена" in response.json()["detail"].lower()
 
 
+def test_forwarded_for_cannot_bypass_no_token_guard(tmp_path):
+    """Only the socket peer matters: a spoofed X-Forwarded-For stays remote."""
+    import asyncio
+
+    import httpx
+
+    config = _config(tmp_path)
+
+    async def remote_request():
+        transport = httpx.ASGITransport(
+            app=create_app(config), client=("203.0.113.44", 49152)
+        )
+        async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1") as c:
+            return await c.get(
+                "/api/v1/cameras", headers={"X-Forwarded-For": "127.0.0.1"}
+            )
+
+    response = asyncio.run(remote_request())
+    assert response.status_code == 403
+
+
+def test_reverse_proxy_with_token_serves_remote_client(tmp_path):
+    """Authenticated deployment behind a reverse proxy keeps working."""
+    import asyncio
+
+    import httpx
+
+    config = _config(tmp_path, api_token="secret")
+
+    async def remote_request():
+        app = create_app(config)
+        # ASGITransport does not run lifespan; the runtime is created there.
+        async with app.router.lifespan_context(app):
+            transport = httpx.ASGITransport(app=app, client=("203.0.113.44", 49152))
+            async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1") as c:
+                return await c.get(
+                    "/api/v1/cameras", headers={"X-API-Token": "secret"}
+                )
+
+    response = asyncio.run(remote_request())
+    assert response.status_code == 200
+
+
 def test_system_info_never_leaks_api_token(tmp_path):
     """S1: even a misconfigured PUBLIC_URL with ?token= is stripped."""
     config = _config(

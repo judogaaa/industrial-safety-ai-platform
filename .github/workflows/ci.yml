@@ -40,7 +40,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: frontend-dist
           path: frontend/dist
@@ -61,7 +61,7 @@ jobs:
           name: frontend-dist
           path: frontend/dist
       - run: PYTHONPATH=backend python e2e/test_incident_review.py --artifacts /tmp/incident-review
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: browser-fixtures

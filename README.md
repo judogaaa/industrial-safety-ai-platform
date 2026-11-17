@@ -43,7 +43,7 @@ PPE и анализ движения работают независимо: за
 
 ## Запуск
 
-Нужны Python 3.11 или 3.12 и Node.js 22. Для интерфейса и API не требуется оборудование LinQ.
+Нужны Python 3.11 или 3.12, Node.js 22 и FFmpeg с libx264 для видеосвидетельств (на Ubuntu: `sudo apt install ffmpeg`). Для интерфейса и API не требуется оборудование LinQ.
 
 ```bash
 python -m venv .venv

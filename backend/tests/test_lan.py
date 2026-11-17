@@ -62,6 +62,26 @@ def test_api_token_gates_api_but_not_health_or_info(tmp_path):
         assert allowed.status_code == 200
 
 
+def test_remote_client_cannot_access_unprotected_api_even_when_host_header_is_local(tmp_path):
+    """A manual network bind must not expose no-token master mode."""
+    import asyncio
+
+    import httpx
+
+    config = _config(tmp_path)
+
+    async def remote_request():
+        transport = httpx.ASGITransport(
+            app=create_app(config), client=("203.0.113.44", 49152)
+        )
+        async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1") as c:
+            return await c.get("/api/v1/cameras")
+
+    response = asyncio.run(remote_request())
+    assert response.status_code == 403
+    assert "токена" in response.json()["detail"].lower()
+
+
 def test_system_info_never_leaks_api_token(tmp_path):
     """S1: even a misconfigured PUBLIC_URL with ?token= is stripped."""
     config = _config(

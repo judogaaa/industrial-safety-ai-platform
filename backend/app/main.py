@@ -1,3 +1,4 @@
+import ipaddress
 import math
 import secrets
 import time
@@ -87,6 +88,21 @@ def create_app(config: Settings = settings, runtime=None):
 
     @app.middleware("http")
     async def local_only(request, call_next):
+        # A direct `uvicorn --host 0.0.0.0` bypasses the safe bind check in
+        # run.py. Empty API_TOKEN grants master access, so reject non-loopback
+        # clients here too. The authenticated --lan mode is unaffected.
+        path = request.url.path
+        if not config.api_token and path.startswith("/api/v1/") and path != "/api/v1/system/info":
+            host = request.client.host if request.client else ""
+            try:
+                loopback = ipaddress.ip_address(host).is_loopback
+            except ValueError:
+                loopback = host in {"localhost", "testclient"} and config.app_env == "dev"
+            if not loopback:
+                return JSONResponse(
+                    {"detail": "Без токена API доступен только с локального компьютера."},
+                    status_code=403,
+                )
         if request.method in {"POST", "PUT", "DELETE", "PATCH"}:
             origin = request.headers.get("origin")
             if origin and origin not in origins:
@@ -94,7 +110,6 @@ def create_app(config: Settings = settings, runtime=None):
                     {"detail": "Этот сервер доступен только локальному интерфейсу."},
                     status_code=403,
                 )
-        path = request.url.path
         if path.startswith("/api/v1/"):
             # The exchange endpoint is open by design: the one-time code,
             # shown only on the operator screen, is the credential.
